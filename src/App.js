@@ -3,7 +3,7 @@ import { SiriusRTC } from "@nete2/sirius-rtc-sdk-ess";
 
 function App() {
   const videoElementRef = React.useRef(null);
-  const [status, setStatus] = React.useState("");
+  const [statusText, setStatusText] = React.useState("");
   const [streamType, setStreamType] = React.useState("");
   const [isPlay, setIsPlay] = React.useState(false);
   const [settings, setSettings] = React.useState("");
@@ -29,35 +29,38 @@ function App() {
     const settingsObj = validateSettings(settings);
     if (!settingsObj) return;
 
-    setStreamType(settingsObj.codec.includes("H265") ? "H.265" : "H.264");
-    let streamType = settingsObj.codec.includes("H265") ? "websocket" : "webrtc";
+    const isH265 = settingsObj.codec.includes("H265");
+    setStreamType(isH265 ? "H.265" : "H.264");
     let playSettings = { url: settingsObj.stream_url };
-
     let stream = SiriusRTC.createPlayStream({
       settings: playSettings,
       videoElement: videoElementRef.current,
-      streamType: streamType,
+      streamType: isH265 ? "websocket" : "webrtc",
     }).on(SiriusRTC.STREAM_EVENT.CONNECTING, (_) => {
-      setStatus("Connecting...");
+      setStatusText("Connecting...");
     }).on(SiriusRTC.STREAM_EVENT.CONNECTED, (_) => {
-      setStatus("Playing...");
+      setStatusText("Playing...");
       setIsPlay(true);
     }).on(SiriusRTC.STREAM_EVENT.STOPPING, (_) => {
-      setStatus("Stopping...");
+      setStatusText("Stopping...");
     }).on(SiriusRTC.STREAM_EVENT.STOPPED, (_) => {
-      setStatus("Stopped.");
+      setStatusText("Stopped.");
       setIsPlay(false);
     }).on(SiriusRTC.STREAM_EVENT.CONNECT_FAILED, (_, error) => {
-      setStatus("Failed. " + error.message);
+      setStatusText("Failed. " + error.message);
       setIsPlay(false);
     }).on(SiriusRTC.STREAM_EVENT.AUTH_FAILED, (_, error) => {
-      setStatus("Auth Failed. " + error.message);
+      setStatusText("Auth Failed. " + error.message);
       setIsPlay(false);
     }).on(SiriusRTC.STREAM_EVENT.CLOSED, (_, data) => {
       let info = JSON.parse(data);
       console.log("StreamClosed %o", info);
-      setStatus(info?.message);
-      setIsPlay(false);
+      if (info?.message) {
+        setIsPlay(false);
+        setStatusText(info?.code + ", " + info?.message);
+      } else {
+        setStatusText(info?.message);
+      }
     });
 
     stream.play();
@@ -76,11 +79,11 @@ function App() {
       <h4 className="title">SiriusRTC Player Demo</h4>
 
       <div className="view-container">
-        <pre className="player-status">{status}</pre>
+        <pre className="player-status">{statusText}</pre>
         <pre className="stream-type-status">{streamType}</pre>
         <video className="mvideo" ref={videoElementRef} autoPlay muted />
         {
-          status === 'Connecting...' &&
+          statusText === 'Connecting...' &&
           <div class="lds-dual-ring video-loading"></div>
         }
 
