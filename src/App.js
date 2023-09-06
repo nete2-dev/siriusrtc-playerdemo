@@ -56,11 +56,11 @@ function App() {
       let info = JSON.parse(data);
       console.log("StreamClosed %o", info);
       if (info?.message) {
-        setIsPlay(false);
         setStatusText(info?.code + ", " + info?.message);
       } else {
-        setStatusText(info?.message);
+        setStatusText("");
       }
+      setIsPlay(false);
     });
 
     stream.play();
@@ -76,6 +76,7 @@ function App() {
 
   return (
     <div className="App">
+      <div className="nete2-overlay"></div>
       <h4 className="title">SiriusRTC Player Demo</h4>
 
       <div className="view-container">
@@ -84,7 +85,7 @@ function App() {
         <video className="mvideo" ref={videoElementRef} autoPlay muted />
         {
           statusText === 'Connecting...' &&
-          <div class="lds-dual-ring video-loading"></div>
+          <div className="lds-dual-ring video-loading"></div>
         }
 
         <div className="view-group">
